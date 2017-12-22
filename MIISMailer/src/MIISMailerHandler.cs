@@ -17,9 +17,14 @@ namespace MIISMailer
             HttpRequest req = ctx.Request;
 
             //First we check if the form is sent from the correct domain (by default, the current domain)
+            bool isAllowed = false;
+            if (req.UrlReferrer == null)
+            {
+                return;
+            }
             string referrerDomain = req.UrlReferrer.Host;
             string[] allowedDomains = Helper.GetParamValue("mailer.alllowedDomains", req.Url.Host).Split(',');
-            bool isAllowed = false;
+            //Must have a referrer to work
             for(int i=0; i<allowedDomains.Length; i++)
             {
                 if(referrerDomain == allowedDomains[i])
@@ -44,6 +49,8 @@ namespace MIISMailer
 
             //Process form data (excluding special params suchs a honeypot or the final URL)
             string formData = Helper.GetFormDataForEmailFromRequest();
+
+            //TODO: Save to CSV File
 
             //Email form data
             Mailer.SendMail(formData);

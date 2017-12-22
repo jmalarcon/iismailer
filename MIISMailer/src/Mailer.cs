@@ -15,7 +15,7 @@ namespace MIISMailer
         /// <param name="body">The body in HTML of the email to send</param>
         public static void SendMail(string body)
         {
-            if (String.IsNullOrWhiteSpace(body))
+            if (String.IsNullOrEmpty(body))
                 return;
 
             //Email params
@@ -50,7 +50,7 @@ namespace MIISMailer
 
             //Configure email server
             SmtpClient client = new SmtpClient();
-            if (string.IsNullOrWhiteSpace(serverUser))  //If there's a user name for the server (could have an empty password)
+            if (!string.IsNullOrEmpty(serverUser))  //If there's a user name for the server (could have an empty password)
                 client.Credentials = new NetworkCredential(serverUser, serverPwd);
 
             client.Port = serverPort;
@@ -58,8 +58,7 @@ namespace MIISMailer
             client.EnableSsl = serverSSL;
 
             //Try to send the email
-            //client.Send(msg);
-            //TODO: Enable email sending
+            client.Send(msg);
         }
     }
 }

@@ -17,7 +17,7 @@ namespace MIISMailer
         public static string GetParamValue(string paramName, string defaultvalue = "")
         {
             string v = WebConfigurationManager.AppSettings[paramName];
-            return String.IsNullOrEmpty(v) ? defaultvalue : v;
+            return String.IsNullOrEmpty(v) ? defaultvalue : v.Trim();
         }
 
         //Tries to convert any object to the specified type
@@ -46,7 +46,7 @@ namespace MIISMailer
             }
             //Add current user IP and user-agent
             formData.AppendFormat("\n- IP: {0}\n", GetIPAddress());
-            formData.AppendFormat("- Usr-Agent: {0}\n", req.UserAgent);
+            formData.AppendFormat("- User-Agent: {0}\n", req.UserAgent);
 
             return formData.ToString();
         }
@@ -72,13 +72,14 @@ namespace MIISMailer
         }
 
         //Gets the URL for the page to be shown after sending the email
-        //By default it takes the value at FINAL_URL_FIELD_NAME if it's valid
-        //if there isn't one it takes the referrer
+        //By default it takes the value of the "mailer.dest" parameter in web.config or 
+        //the value of the FINAL_URL_FIELD_NAME field in the form if it doesn't exist.
+        //if there isn't any of both, it takes the referrer
         public static string GetDestinationURL()
         {
             HttpRequest req = HttpContext.Current.Request;
-            string dest = req.Form[FINAL_URL_FIELD_NAME];
-            return string.IsNullOrWhiteSpace(dest) ? req.UrlReferrer.ToString() : dest;
+            string dest = GetParamValue("mailer.dest", req.Form[FINAL_URL_FIELD_NAME]);
+            return string.IsNullOrEmpty(dest) ? req.UrlReferrer.ToString() : dest;
         }
     }
 }
