@@ -21,7 +21,6 @@ namespace MIISMailer
             //Email params
             string fromAddress = Helper.GetParamValue("mailer.fromAddress"),
                 fromName = Helper.GetParamValue("mailer.fromName"),
-                toName = Helper.GetParamValue("mailer.toName"),
                 toAddress = Helper.GetParamValue("mailer.toAddress"),
                 subject = Helper.GetParamValue("mailer.subject", "New form submission from MIISMailer!"),
                 serverUser = Helper.GetParamValue("mailer.server.user"),
