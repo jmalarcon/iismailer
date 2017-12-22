@@ -50,15 +50,17 @@ namespace MIISMailer
             //Process form data (excluding special params suchs a honeypot or the final URL)
             string formData = Helper.GetFormDataForEmailFromRequest();
 
-            //TODO: Save to CSV File
+            //Save to CSV File
+            Helper.AppendToCSVFile();
 
             //Email form data
+#if debug
             Mailer.SendMail(formData);
-
+#endif
             //Redirect to final URL
             ctx.Response.Redirect(Helper.GetDestinationURL());
         }
 
-        #endregion
+#endregion
     }
 }
