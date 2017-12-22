@@ -6,13 +6,16 @@ using System.Text;
 using Mono.Csv;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace MIISMailer
 {
     internal static class Helper
     {
-        internal const string HONEYPOT_FIELD_NAME = "miis-email-hpt";
-        internal const string FINAL_URL_FIELD_NAME = "miis-email-dest";
+        internal const string HONEYPOT_FIELD_NAME = "miis-email-hpt";   //Honeypot field name in the form to check for spam
+        internal const string FINAL_URL_FIELD_NAME = "miis-email-dest"; //Destination URL field to redirect to after sending the email
+
+        internal static Regex REGEXFIELDS = new Regex(@"\{[0-9a-zA-Z_]+?\}");  //Regular Expression to find fields in templates only letters, numbers and underscores
 
         //Returns a param from web.config or a default value for it
         //The defaultValue can be skipped and it will be returned an empty string if it's needed
@@ -108,12 +111,7 @@ namespace MIISMailer
             if (string.IsNullOrEmpty(csvPath))
                 return;
 
-            //Check if its an absolute path on disk (or in a remote folder)
-            if (csvPath.IndexOf(":") <0 && csvPath.IndexOf(@"\\") == 0)
-            {
-                //If it's a relative path, get the full file path
-                csvPath = HttpContext.Current.Server.MapPath(csvPath);
-            }
+            csvPath = GetAbsolutePath(csvPath);
 
             using (StreamWriter swCSV = new StreamWriter(csvPath,true))    //Open file to append data
             {
@@ -124,5 +122,80 @@ namespace MIISMailer
             }
             
         }
+
+        //This method gets the email from the form and checks if sending a template email is enabled to be sent to them, and sends it
+        internal static void SendResponseToFormSender()
+        {
+            //Check if send response is enabled...
+            if ( !Helper.DoConvert<bool>(GetParamValue("mailer.response.enabled", "false")) )
+                return;
+
+            //...if there's a valid template for it...
+            string templatePath = GetParamValue("mailer.response.template");
+            if (string.IsNullOrEmpty(templatePath))
+                return;
+            templatePath = GetAbsolutePath(templatePath);
+            if (!File.Exists(templatePath))
+                return;
+
+            //...and if there's a field named "email" in the form
+            string userEmail = HttpContext.Current.Request.Form["email"];
+            if (string.IsNullOrEmpty(userEmail))
+                return;
+
+            //Read template from disk
+            string templateContents = ReadTextFromFile(templatePath);
+
+            //Substitute placeholders for fields, if any
+            templateContents = ReplacePlaceholders(templateContents);
+
+            //Send the final email
+            Mailer.SendMail(
+                userEmail, 
+                GetParamValue("mailer.response.subject", "Thanks for getting in touch"),
+                templateContents, 
+                true);
+        }
+
+        #region Internal auxiliary methods
+
+        //Returns the absolute path to a file if it's a relative one 
+        private static string GetAbsolutePath(string path)
+        {
+            //Check if its an absolute path on disk (or in a remote folder)
+            if (path.IndexOf(":") < 0 && path.IndexOf(@"\\") < 0)
+            {
+                //If it's a relative path, get the full file path
+                path = HttpContext.Current.Server.MapPath(path);
+            }
+            return path;
+        }
+
+        //Reads the full contents of a text file from disk
+        private static string ReadTextFromFile(string path)
+        {
+            using (StreamReader srMD = new StreamReader(path))
+            {
+                return srMD.ReadToEnd(); //Text file contents
+            }
+        }
+
+        //Substitutes {fieldname} placeholders in the template
+        private static string ReplacePlaceholders(string contents)
+        {
+            HttpRequest req = HttpContext.Current.Request;
+
+            foreach (Match field in REGEXFIELDS.Matches(contents))
+            {
+                string fldName = field.Value.Substring(1, field.Value.Length - 2).Trim();
+                string fldVal = req.Form[fldName];
+                if (!string.IsNullOrEmpty(fldVal))
+                    contents = contents.Replace(field.Value, fldVal);
+            }
+
+            return contents;
+        }
+
+        #endregion
     }
 }

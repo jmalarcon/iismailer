@@ -56,6 +56,9 @@ namespace MIISMailer
             //Email form data
             Mailer.SendMail(formData);
 
+            //Send response to the user that filled in the form
+            Helper.SendResponseToFormSender();
+
             //Redirect to final URL
             ctx.Response.Redirect(Helper.GetDestinationURL());
         }

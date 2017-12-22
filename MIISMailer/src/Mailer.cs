@@ -8,12 +8,15 @@ namespace MIISMailer
     public static class Mailer
     {
         /// <summary>
-        /// Sends an email with the specified body using the configuration in web.config.
+        /// Sends an email to the specified recipientes (comma separated string) 
+        /// with the specified body using the configuration in web.config.
         /// May raise exceptions if there are missing parameters in the configuration file.
-        /// It doesn't check if it's a valid email address!! If it's not valid it will raise an exception
+        /// It doesn't check if there's a valid sender email address!! If it's not valid it will raise an exception.
+        /// If the recipient email addresses are not valid emails it will ignore them
         /// </summary>
+        /// <param name="dest"></param>
         /// <param name="body">The body in HTML of the email to send</param>
-        public static void SendMail(string body)
+        public static void SendMail(string recipients, string subj, string body, bool isHTMLContent=false)
         {
             if (String.IsNullOrEmpty(body))
                 return;
@@ -21,8 +24,8 @@ namespace MIISMailer
             //Email params
             string fromAddress = Helper.GetParamValue("mailer.fromAddress"),
                 fromName = Helper.GetParamValue("mailer.fromName"),
-                toAddress = Helper.GetParamValue("mailer.toAddress"),
-                subject = Helper.GetParamValue("mailer.subject", "New form submission from MIISMailer!"),
+                toAddress = recipients,
+                subject = subj,
                 serverUser = Helper.GetParamValue("mailer.server.user"),
                 serverPwd = Helper.GetParamValue("mailer.server.password"),
                 serverHost = Helper.GetParamValue("mailer.server.host");
@@ -39,13 +42,21 @@ namespace MIISMailer
             string[] toAddresses = toAddress.Split(',');
             for (int i = 0; i < toAddresses.Length; i++)
             {
-                msg.To.Add(toAddresses[i]);
+                //Catches invalid email addresses
+                try
+                {
+                    msg.To.Add(toAddresses[i]);
+                }
+                catch { }
             }
+            if (msg.To.Count == 0)  //If there are no valid email addresses in the To field, abort email sending
+                return;
+
             msg.Subject = subject;
             msg.SubjectEncoding = System.Text.Encoding.UTF8;
             msg.Body = body;
             msg.BodyEncoding = System.Text.Encoding.UTF8;
-            msg.IsBodyHtml = false;
+            msg.IsBodyHtml = isHTMLContent;
 
             //Configure email server
             SmtpClient client = new SmtpClient();
@@ -58,6 +69,21 @@ namespace MIISMailer
 
             //Try to send the email
             client.Send(msg);
+        }
+
+        /// <summary>
+        /// Sends an email with the specified body using the configuration and the recipients in web.config.
+        /// May raise exceptions if there are missing parameters in the configuration file.
+        /// It doesn't check if there's a valid sender email address!! If it's not valid it will raise an exception.
+        /// If the recipient email addresses are not valid emails it will ignore them
+        /// </summary>
+        /// <param name="body">The body in HTML of the email to send</param>
+        public static void SendMail(string body)
+        {
+            SendMail(
+                Helper.GetParamValue("mailer.toAddress"),
+                Helper.GetParamValue("mailer.subject", "New form submission from MIISMailer!"), 
+                body);
         }
     }
 }
