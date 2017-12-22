@@ -54,9 +54,8 @@ namespace MIISMailer
             Helper.AppendToCSVFile();
 
             //Email form data
-#if debug
             Mailer.SendMail(formData);
-#endif
+
             //Redirect to final URL
             ctx.Response.Redirect(Helper.GetDestinationURL());
         }
