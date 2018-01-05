@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Mail;
 using System.Net.Mime;
 
-namespace MIISMailer
+namespace IISMailer
 {
     public static class Mailer
     {
@@ -82,7 +82,7 @@ namespace MIISMailer
         {
             SendMail(
                 Helper.GetParamValue("mailer.toAddress"),
-                Helper.GetParamValue("mailer.subject", "New form submission from MIISMailer!"), 
+                Helper.GetParamValue("mailer.subject", "New form submission from IISMailer!"), 
                 body);
         }
     }

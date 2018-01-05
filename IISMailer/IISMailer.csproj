@@ -10,8 +10,8 @@
     <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MIISMailer</RootNamespace>
-    <AssemblyName>MIISMailer</AssemblyName>
+    <RootNamespace>IISMailer</RootNamespace>
+    <AssemblyName>IISMailer</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <UseIISExpress>true</UseIISExpress>
     <Use64BitIISExpress />
@@ -63,10 +63,12 @@
     <Compile Include="src\Helper.cs" />
     <Compile Include="src\LiteCsvParser.cs" />
     <Compile Include="src\Mailer.cs" />
-    <Compile Include="src\MIISMailerHandler.cs" />
+    <Compile Include="src\IISMailerHandler.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Web.config" />
+    <Content Include="Web.config">
+      <SubType>Designer</SubType>
+    </Content>
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
@@ -78,6 +80,7 @@
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
   </PropertyGroup>
+  <Import Project="E:\_CloudStorage\Dropbox\1 - Jose\Desarrollos\MIIS-IISMarkdownHandler\GithubRepo\src\IISHelpers\IISHelpers.projitems" Label="Shared" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" Condition="false" />

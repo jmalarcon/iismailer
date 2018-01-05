@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("MIISMailer")]
+[assembly: AssemblyTitle("IISMailer")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("MIISMailer")]
-[assembly: AssemblyCopyright("Copyright © Jose M. Alarcon 2017")]
+[assembly: AssemblyProduct("IISMailer")]
+[assembly: AssemblyCopyright("Copyright © Jose M. Alarcon 2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

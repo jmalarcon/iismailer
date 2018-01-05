@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Web;
 
-namespace MIISMailer
+namespace IISMailer
 {
-    public class MIISMailerHandler : IHttpHandler
+    public class IISMailerHandler : IHttpHandler
     {
         #region IHttpHandler Members
 
@@ -34,7 +34,7 @@ namespace MIISMailer
                 }
             }
 
-            //and check the spam prevention field (miis-email-hpt) (from MIIS Emailer Honeypot) with any value
+            //and check the spam prevention field (miis-email-hpt) (from IIS Emailer Honeypot) with any value
             if (!string.IsNullOrEmpty(req.Form[Helper.HONEYPOT_FIELD_NAME]))
                 isAllowed = false;
 

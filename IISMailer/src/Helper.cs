@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
-namespace MIISMailer
+namespace IISMailer
 {
     internal static class Helper
     {
