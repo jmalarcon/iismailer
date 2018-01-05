@@ -7,40 +7,48 @@ using Mono.Csv;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using IISHelpers;
+using IISHelpers.YAML;
 
 namespace IISMailer
 {
-    internal static class Helper
+    internal class Helper
     {
-        internal const string HONEYPOT_FIELD_NAME = "miis-email-hpt";   //Honeypot field name in the form to check for spam
-        internal const string FINAL_URL_FIELD_NAME = "miis-email-dest"; //Destination URL field to redirect to after sending the email
+        public const string HONEYPOT_FIELD_NAME = "iismailer-hpt";   //Honeypot field name in the form to check for spam
+        public const string FINAL_URL_FIELD_NAME = "iismailer-dest-url"; //Destination URL field to redirect to after sending the email
 
-        internal static Regex REGEXFIELDS = new Regex(@"\{[0-9a-zA-Z_]+?\}");  //Regular Expression to find fields in templates only letters, numbers and underscores
+        public const string WEB_CONFIG_PARAM_PREFIX = "IISMailer:"; //THe prefix to use to search for parameters in web.config
 
-        //Returns a param from web.config or a default value for it
-        //The defaultValue can be skipped and it will be returned an empty string if it's needed
-        internal static string GetParamValue(string paramName, string defaultvalue = "")
+        private SimpleYAMLParser mailerProps;
+
+        //Constructor
+        public Helper(string props)
         {
-            string v = WebConfigurationManager.AppSettings[paramName];
-            return String.IsNullOrEmpty(v) ? defaultvalue : v.Trim();
+            mailerProps = new SimpleYAMLParser(props);
         }
 
-        //Tries to convert any object to the specified type
-        internal static T DoConvert<T>(object v)
+        /// <summary>
+        /// Returns the value, if any, for a specified field name. It takes the value from the FrontMatter first, and if it's not there, tries to read it from the current Web.config.
+        /// In web.config it first tries to read them prefixed with "IISMAiler:" to prevent collision with other products, and then without the prefix.
+        /// If it's not present neither in the Front Matter nor the Web.config, returns the specified default value.
+        /// </summary>
+        /// <param name="name">The name of the field to retrieve</param>
+        /// <param name="defValue">The default value to return if it's not present</param>
+        /// <returns></returns>
+        public string GetParamValue(string name, string defValue = "")
         {
-            try
-            {
-                return (T) Convert.ChangeType(v, typeof(T));
-            }
-            catch
-            {
-                return (T)Activator.CreateInstance(typeof(T));
-            }
+            //Retrieve from the front matter...
+            string val = mailerProps[name];
+            if (!string.IsNullOrEmpty(val))
+                return val;
+
+            //Retrieve from Web.config using the app-specific prefix or without it if it's not present
+            return WebHelper.GetParamValue(WEB_CONFIG_PARAM_PREFIX + name, WebHelper.GetParamValue(name, defValue));
         }
 
         //Gets a string to be sent through email from the Form in the current request
         //(excluding special params suchs a honeypot or finalURL)
-        internal static string GetFormDataForEmailFromRequest()
+        internal string GetFormDataForEmailFromRequest()
         {
             HttpRequest req = HttpContext.Current.Request;
             StringBuilder formData = new StringBuilder();
@@ -50,14 +58,14 @@ namespace IISMailer
                     formData.AppendFormat("- {0}: {1}\n", fld, req.Form[fld]);
             }
             //Add current user IP and user-agent
-            formData.AppendFormat("\n- IP: {0}\n", GetIPAddress());
+            formData.AppendFormat("\n- IP: {0}\n", WebHelper.GetIPAddress());
             formData.AppendFormat("- User-Agent: {0}\n", req.UserAgent);
 
             return formData.ToString();
         }
 
         //Gets a string to be sent to a CSV file
-        internal static List<string> GetFormDataForCSVFromRequest()
+        internal List<string> GetFormDataForCSVFromRequest()
         {
             HttpRequest req = HttpContext.Current.Request;
             List<string> formData = new List<string>();
@@ -69,46 +77,29 @@ namespace IISMailer
                 }
             }
             //Add current user IP and user-agent
-            formData.Add(GetIPAddress());
+            formData.Add(WebHelper.GetIPAddress());
             formData.Add(req.UserAgent);
 
             return formData;
         }
 
-        //Gets current user IP (even if it's forwarded by a proxy
-        internal static string GetIPAddress()
-        {
-            HttpContext ctx = HttpContext.Current;
-            string ip = ctx.Request.ServerVariables["HTTP_X_FORWARDED_FOR"];
-
-            if (!string.IsNullOrEmpty(ip))
-            {
-                string[] addresses = ip.Split(',');
-                if (addresses.Length != 0)
-                {
-                    return addresses[0];
-                }
-            }
-
-            return ctx.Request.ServerVariables["REMOTE_ADDR"];
-        }
-
         //Gets the URL for the page to be shown after sending the email
-        //By default it takes the value of the "mailer.dest" parameter in web.config or 
+        //By default it takes the value of the "dest.url" parameter in web.config or 
         //the value of the FINAL_URL_FIELD_NAME field in the form if it doesn't exist.
         //if there isn't any of both, it takes the referrer
-        internal static string GetDestinationURL()
+        internal string GetDestinationURL()
         {
             HttpRequest req = HttpContext.Current.Request;
-            string dest = GetParamValue("mailer.dest", req.Form[FINAL_URL_FIELD_NAME]);
+            string dest = GetParamValue("dest.url", req.Form[FINAL_URL_FIELD_NAME]);
             return string.IsNullOrEmpty(dest) ? req.UrlReferrer.ToString() : dest;
         }
 
-        //Appends data line to CSV file
-        internal static void AppendToCSVFile()
+        //Appends data line to the CSV file (if there's one)
+        internal void AppendToCSVFile()
         {
-            string csvPath = GetParamValue("mailer.csv.path", "");
-            if (string.IsNullOrEmpty(csvPath))
+            bool csvEnabled = TypesHelper.DoConvert<bool>(GetParamValue("CSV.enabled", "false"));
+            string csvPath = GetParamValue("CSV.path", "");
+            if (!csvEnabled || string.IsNullOrEmpty(csvPath))
                 return;
 
             csvPath = GetAbsolutePath(csvPath);
@@ -124,14 +115,15 @@ namespace IISMailer
         }
 
         //This method gets the email from the form and checks if sending a template email is enabled to be sent to them, and sends it
-        internal static void SendResponseToFormSender()
+        internal void SendResponseToFormSender()
         {
             //Check if send response is enabled...
-            if ( !Helper.DoConvert<bool>(GetParamValue("mailer.response.enabled", "false")) )
+            bool isSendResponseEnabled = TypesHelper.DoConvert<bool>(GetParamValue("response.enabled", "false"));
+            if ( !isSendResponseEnabled)
                 return;
 
             //...if there's a valid template for it...
-            string templatePath = GetParamValue("mailer.response.template");
+            string templatePath = GetParamValue("response.template");
             if (string.IsNullOrEmpty(templatePath))
                 return;
             templatePath = GetAbsolutePath(templatePath);
@@ -144,15 +136,20 @@ namespace IISMailer
                 return;
 
             //Read template from disk
-            string templateContents = ReadTextFromFile(templatePath);
+            string templateContents = IOHelper.ReadTextFromFile(templatePath);
 
             //Substitute placeholders for fields, if any
             templateContents = ReplacePlaceholders(templateContents);
 
+            //Get the subject
+            string subject = GetParamValue("response.subject", "Thanks for getting in touch");
+            subject = ReplacePlaceholders(subject);
+
             //Send the final email
-            Mailer.SendMail(
+            Mailer mlr = new Mailer(this);
+            mlr.SendMail(
                 userEmail, 
-                GetParamValue("mailer.response.subject", "Thanks for getting in touch"),
+                subject,
                 templateContents, 
                 true);
         }
@@ -160,7 +157,7 @@ namespace IISMailer
         #region Internal auxiliary methods
 
         //Returns the absolute path to a file if it's a relative one 
-        private static string GetAbsolutePath(string path)
+        private string GetAbsolutePath(string path)
         {
             //Check if its an absolute path on disk (or in a remote folder)
             if (path.IndexOf(":") < 0 && path.IndexOf(@"\\") < 0)
@@ -171,26 +168,16 @@ namespace IISMailer
             return path;
         }
 
-        //Reads the full contents of a text file from disk
-        private static string ReadTextFromFile(string path)
-        {
-            using (StreamReader srMD = new StreamReader(path))
-            {
-                return srMD.ReadToEnd(); //Text file contents
-            }
-        }
-
-        //Substitutes {fieldname} placeholders in the template
-        private static string ReplacePlaceholders(string contents)
+        //Substitutes {{fieldname}} placeholders in the template
+        private string ReplacePlaceholders(string contents)
         {
             HttpRequest req = HttpContext.Current.Request;
 
-            foreach (Match field in REGEXFIELDS.Matches(contents))
+            string[] fields = TemplatingHelper.GetAllPlaceHolderNames(contents);
+            foreach(string fldName in fields)
             {
-                string fldName = field.Value.Substring(1, field.Value.Length - 2).Trim();
                 string fldVal = req.Form[fldName];
-                if (!string.IsNullOrEmpty(fldVal))
-                    contents = contents.Replace(field.Value, fldVal);
+                contents = TemplatingHelper.ReplacePlaceHolder(contents, fldName, fldVal);
             }
 
             return contents;

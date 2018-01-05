@@ -2,11 +2,20 @@
 using System.Net;
 using System.Net.Mail;
 using System.Net.Mime;
+using IISHelpers;
 
 namespace IISMailer
 {
-    public static class Mailer
+    internal class Mailer
     {
+        private Helper hlpr;
+
+        //Constructor
+        public Mailer(Helper h)
+        {
+            hlpr = h;
+        }
+
         /// <summary>
         /// Sends an email to the specified recipientes (comma separated string) 
         /// with the specified body using the configuration in web.config.
@@ -14,31 +23,35 @@ namespace IISMailer
         /// It doesn't check if there's a valid sender email address!! If it's not valid it will raise an exception.
         /// If the recipient email addresses are not valid emails it will ignore them
         /// </summary>
-        /// <param name="dest"></param>
-        /// <param name="body">The body in HTML of the email to send</param>
-        public static void SendMail(string recipients, string subj, string body, bool isHTMLContent=false)
+        /// <param name="recipients"></param>
+        /// <param name="subj"></param>
+        /// <param name="body"></param>
+        /// <param name="isHTMLContent"></param>
+        public void SendMail(string recipients, string subj, string body, bool isHTMLContent=false)
         {
             if (String.IsNullOrEmpty(body))
                 return;
 
             //Email params
-            string fromAddress = Helper.GetParamValue("mailer.fromAddress"),
-                fromName = Helper.GetParamValue("mailer.fromName"),
+            string fromAddress = hlpr.GetParamValue("fromAddress"),
+                fromName = hlpr.GetParamValue("fromName"),
                 toAddress = recipients,
                 subject = subj,
-                serverUser = Helper.GetParamValue("mailer.server.user"),
-                serverPwd = Helper.GetParamValue("mailer.server.password"),
-                serverHost = Helper.GetParamValue("mailer.server.host");
-            int serverPort = Helper.DoConvert<int>(Helper.GetParamValue("mailer.server.port", "587"));
-            bool serverSSL = Helper.DoConvert<bool>(Helper.GetParamValue("mailer.server.SSL", "true"));
+                serverUser = hlpr.GetParamValue("server.user"),
+                serverPwd = hlpr.GetParamValue("server.password"),
+                serverHost = hlpr.GetParamValue("server.host");
+            int serverPort = TypesHelper.DoConvert<int>(hlpr.GetParamValue("server.port", "587"));
+            bool serverSSL = TypesHelper.DoConvert<bool>(hlpr.GetParamValue("server.SSL", "true"));
 
             //At least we'll need from, to and host to try to send the email
             if (fromAddress == "" || toAddress == "" || serverHost == "")
-                throw new ArgumentException("One of the needed configuration parameters is missing", "mailer.fromAddress, mailer.toAddress or mailer.server.host");
+                throw new ArgumentException("One of the needed configuration parameters is missing", "fromAddress, toAddress or server.host");
 
             //Configure email contents
-            MailMessage msg = new MailMessage();
-            msg.From = new MailAddress(fromAddress, fromName, System.Text.Encoding.UTF8);
+            MailMessage msg = new MailMessage
+            {
+                From = new MailAddress(fromAddress, fromName, System.Text.Encoding.UTF8)
+            };
             string[] toAddresses = toAddress.Split(',');
             for (int i = 0; i < toAddresses.Length; i++)
             {
@@ -78,11 +91,11 @@ namespace IISMailer
         /// If the recipient email addresses are not valid emails it will ignore them
         /// </summary>
         /// <param name="body">The body in HTML of the email to send</param>
-        public static void SendMail(string body)
+        public void SendMail(string body)
         {
             SendMail(
-                Helper.GetParamValue("mailer.toAddress"),
-                Helper.GetParamValue("mailer.subject", "New form submission from IISMailer!"), 
+                hlpr.GetParamValue("toAddress"),
+                hlpr.GetParamValue("subject", "New form submission from IISMailer!"), 
                 body);
         }
     }

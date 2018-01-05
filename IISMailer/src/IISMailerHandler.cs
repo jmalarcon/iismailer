@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Web;
+using System.IO;
+using System.Security;
+using IISHelpers;
 
 namespace IISMailer
 {
@@ -16,6 +19,30 @@ namespace IISMailer
         {
             HttpRequest req = ctx.Request;
 
+            //Try to process the definition file to send an email
+            string filePath = ctx.Server.MapPath(ctx.Request.FilePath);
+            Helper hlpr = new Helper(""); //Takes care of reading property values and some other helper tasks
+            try
+            {
+                hlpr = new Helper(IOHelper.ReadTextFromFile(filePath));
+            }
+            catch (FileNotFoundException)
+            {
+                //File does not exist
+                ctx.Response.StatusDescription = "File not found";
+                ctx.Response.StatusCode = 404;
+            }
+            catch (SecurityException)
+            {
+                //Access to file not allowed
+                ctx.Response.StatusDescription = "Forbidden";
+                ctx.Response.StatusCode = 403;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
             //First we check if the form is sent from the correct domain (by default, the current domain)
             bool isAllowed = false;
             if (req.UrlReferrer == null)
@@ -23,7 +50,7 @@ namespace IISMailer
                 return;
             }
             string referrerDomain = req.UrlReferrer.Host;
-            string[] allowedDomains = Helper.GetParamValue("mailer.alllowedDomains", req.Url.Host).Split(',');
+            string[] allowedDomains = hlpr.GetParamValue("allowedDomains", req.Url.Host).Split(',');
             //Must have a referrer to work
             for(int i=0; i<allowedDomains.Length; i++)
             {
@@ -48,19 +75,20 @@ namespace IISMailer
             }
 
             //Process form data (excluding special params suchs a honeypot or the final URL)
-            string formData = Helper.GetFormDataForEmailFromRequest();
+            string formData = hlpr.GetFormDataForEmailFromRequest();
 
             //Save to CSV File
-            Helper.AppendToCSVFile();
+            hlpr.AppendToCSVFile();
 
             //Email form data
-            Mailer.SendMail(formData);
+            Mailer mlr = new Mailer(hlpr);
+            mlr.SendMail(formData);
 
             //Send response to the user that filled in the form
-            Helper.SendResponseToFormSender();
+            hlpr.SendResponseToFormSender();
 
             //Redirect to final URL
-            ctx.Response.Redirect(Helper.GetDestinationURL());
+            ctx.Response.Redirect(hlpr.GetDestinationURL());
         }
 
 #endregion
