@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using IISHelpers;
 using IISHelpers.YAML;
+using System.Net;
 
 namespace IISMailer
 {
@@ -129,6 +130,30 @@ namespace IISMailer
                 true);
         }
 
+        //Calls a Webhook in a fire&forget fashion (doesn´t wait for the response)
+        //Get's the Webhook data from the current params
+        internal void CallWebHook()
+        {
+            string whURL = GetParamValue("webhook.url");    //Webhook URL
+            string whFormat = GetParamValue("webhook.format", "json").ToLower();  //THe method to send data to the webhook (JSON by default, can be FORM too)
+            Uri whUri;
+            bool isValid = Uri.TryCreate(whURL, UriKind.Absolute, out whUri);
+            //Check if Webhook URl is valid and is HTTP or HTTPs, in other case, just return
+            if ( !(isValid && (whUri.Scheme == "http" || whUri.Scheme == "https")) )
+                return;
+
+            //Make the call to the Webhook passing the form's data in the specified format
+            if (whFormat == "form")
+            {
+                PostFormToURL(whURL);
+            }
+            else
+            {
+                //Assume JSON in any other case
+                PostJsonToURl(whURL);
+            }
+        }
+
         #region Internal auxiliary methods
 
         //Clone the current request from data to an internal collection to be able to manipulate it
@@ -178,6 +203,36 @@ namespace IISMailer
             }
 
             return contents;
+        }
+
+        //Post current data to URL using the indicated format
+        //https://docs.microsoft.com/en-us/dotnet/framework/network-programming/how-to-send-data-using-the-webrequest-class
+        //Posts current data in "form" format to an URL using the POST method
+        private void PostToURL(string url, string data, string contentType)
+        {
+            WebRequest wr = WebRequest.Create(url);
+            wr.Method = "POST";
+            wr.ContentType = contentType;
+            byte[] bData = Encoding.UTF8.GetBytes(data);
+            wr.ContentLength = bData.Length;
+            using (Stream dataStream = wr.GetRequestStream())
+            {
+                dataStream.Write(bData, 0, bData.Length);
+            }
+            WebResponse resp = wr.GetResponse();    //We don't use the response at all (fire and forget, kind-of, since it's not async here, but it's async the handler)
+        }
+
+
+        //Posts current data in "form" format to an URL using the POST method
+        private void PostFormToURL(string url)
+        {
+            PostToURL(url, ToFormDataStr(_data), "application/x-www-form-urlencoded");
+        }
+
+        //Posts current data in json format to an URL using the POST method
+        private void PostJsonToURl(string url)
+        {
+            PostToURL(url, ToJsonStr(_data), "application/json");
         }
 
         #endregion

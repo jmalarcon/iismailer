@@ -10,3 +10,6 @@ dest.url: /thanks-for-your-mail.html
 # response.enabled: true
 # response.subject: We've received your email. Thanks.
 # response.template: ResponseTemplate.html
+
+webhook.url: https://hooks.zapier.com/hooks/catch/3366/zttx/
+webhook.format: form

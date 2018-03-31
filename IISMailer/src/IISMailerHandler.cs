@@ -58,6 +58,9 @@ namespace IISMailer
                 Mailer mlr = new Mailer(hlpr);
                 mlr.SendMail(formData);
 
+                //Call webhook if any
+                hlpr.CallWebHook();
+
                 //Save to CSV File
                 hlpr.AppendToCSVFile();
 
