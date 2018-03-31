@@ -54,12 +54,13 @@ namespace IISMailer
             StringBuilder formData = new StringBuilder();
             foreach (string fld in req.Form)
             {
-                if (fld.ToLower() != HONEYPOT_FIELD_NAME && fld.ToLower() != FINAL_URL_FIELD_NAME)
+                if (IsDataField(fld))
                     formData.AppendFormat("- {0}: {1}\n", fld, req.Form[fld]);
             }
-            //Add current user IP and user-agent
+            //Add current user IP, user-agent and referrer
             formData.AppendFormat("\n- IP: {0}\n", WebHelper.GetIPAddress());
             formData.AppendFormat("- User-Agent: {0}\n", req.UserAgent);
+            formData.AppendFormat("- Referrer: {0}\n", req.UrlReferrer.ToString());
 
             return formData.ToString();
         }
@@ -71,14 +72,15 @@ namespace IISMailer
             List<string> formData = new List<string>();
             foreach (string fld in req.Form)
             {
-                if (fld.ToLower() != HONEYPOT_FIELD_NAME && fld.ToLower() != FINAL_URL_FIELD_NAME)
+                if (IsDataField(fld))
                 {
                     formData.Add(req.Form[fld]);
                 }
             }
-            //Add current user IP and user-agent
+            //Add current user IP, user-agent and referrer
             formData.Add(WebHelper.GetIPAddress());
             formData.Add(req.UserAgent);
+            formData.Add(req.UrlReferrer.ToString());
 
             return formData;
         }
@@ -155,6 +157,13 @@ namespace IISMailer
         }
 
         #region Internal auxiliary methods
+
+        //Check if the received field is a data field or not. Valid fields are those which are not used as
+        //instructions from the form, such as the Honeypot field or the Final URL field.
+        private static bool IsDataField(string fld)
+        {
+            return fld.ToLower() != HONEYPOT_FIELD_NAME && fld.ToLower() != FINAL_URL_FIELD_NAME;
+        }
 
         //Returns the absolute path to a file if it's a relative one 
         private string GetAbsolutePath(string path)

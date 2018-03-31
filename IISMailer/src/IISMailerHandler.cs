@@ -65,8 +65,6 @@ namespace IISMailer
             if (!string.IsNullOrEmpty(req.Form[Helper.HONEYPOT_FIELD_NAME]))
                 isAllowed = false;
 
-            //TODO: Possibly add a maximum emails sent per minute check using caching
-
             if (!isAllowed)
             {
                 ctx.Response.StatusDescription = "Forbidden";
