@@ -2,11 +2,10 @@
 using System.Web;
 using System.IO;
 using System.Security;
-using IISHelpers;
 
 namespace IISMailer
 {
-    public class IISMailerHandler : IHttpHandler
+    public class IISMailerHandler : IHttpAsyncHandler
     {
         #region IHttpHandler Members
 
@@ -23,7 +22,7 @@ namespace IISMailer
 
                 //Try to process the definition file to send an email
                 string filePath = ctx.Server.MapPath(ctx.Request.FilePath);
-                Helper hlpr = new Helper(filePath);    //Takes care of reading property values and some other helper tasks
+                Helper hlpr = new Helper(filePath, ctx);    //Takes care of reading property values and some other helper tasks
 
                 //First we check if the form is sent from the correct domain (by default, the current domain)
                 bool isAllowed = false;
@@ -90,6 +89,22 @@ namespace IISMailer
             }
         }
 
-#endregion
+        #endregion
+
+        #region IHttpAsyncHandler members
+        private delegate void AsyncRequestDelegate(HttpContext context);
+        private AsyncRequestDelegate procRequest;
+
+        public IAsyncResult BeginProcessRequest(HttpContext context, AsyncCallback cb, object extraData)
+        {
+            procRequest = new AsyncRequestDelegate(ProcessRequest);
+            return procRequest.BeginInvoke(context,cb, extraData);
+        }
+
+        public void EndProcessRequest(IAsyncResult result)
+        {
+            procRequest.EndInvoke(result);
+        }
+        #endregion
     }
 }

@@ -20,10 +20,12 @@ namespace IISMailer
 
         private SimpleYAMLParser _mailerProps;
         private NameValueCollection _data;
+        private HttpContext _ctx;
 
         //Constructor
-        public Helper(string mailerDefPath)
+        public Helper(string mailerDefPath, HttpContext ctx)
         {
+            _ctx = ctx; //Current request context (needed because of the async nature of the processing)
             string props = IOHelper.ReadTextFromFile(mailerDefPath);
             //Get the Front Matter of the form action definition file
             _mailerProps = new SimpleYAMLParser(props);
@@ -65,7 +67,7 @@ namespace IISMailer
         //if there isn't any of both, it takes the referrer
         internal string GetDestinationURL()
         {
-            HttpRequest req = HttpContext.Current.Request;
+            HttpRequest req = _ctx.Request;
             string dest = GetParamValue("dest.url", req.Form[FINAL_URL_FIELD_NAME]);
             return string.IsNullOrEmpty(dest) ? req.UrlReferrer.ToString() : dest;
         }
@@ -107,7 +109,7 @@ namespace IISMailer
                 return;
 
             //...and if there's a field named "email" in the form
-            string userEmail = HttpContext.Current.Request.Form["email"];
+            string userEmail = _ctx.Request.Form["email"];
             if (string.IsNullOrEmpty(userEmail))
                 return;
 
@@ -159,7 +161,7 @@ namespace IISMailer
         //Clone the current request from data to an internal collection to be able to manipulate it
         private void CloneRequestData()
         {
-            _data = new NameValueCollection(HttpContext.Current.Request.Form);
+            _data = new NameValueCollection(_ctx.Request.Form);
         }
 
         //Check if the received field is a data field or not. Valid fields are those which are not used as
@@ -172,8 +174,8 @@ namespace IISMailer
         //Adds extra info to the data received from the form, such as the user IP, the UserAgent or the Referrer
         private void AddExtraInfoToRequestData()
         {
-            HttpRequest req = HttpContext.Current.Request;
-            _data.Add("IP", WebHelper.GetIPAddress());
+            HttpRequest req = _ctx.Request;
+            _data.Add("IP", GetIPAddress());
             _data.Add("User-Agent", req.UserAgent);
             _data.Add("Referrer", req.UrlReferrer.ToString());
         }
@@ -185,15 +187,34 @@ namespace IISMailer
             if (path.IndexOf(":") < 0 && path.IndexOf(@"\\") < 0)
             {
                 //If it's a relative path, get the full file path
-                path = HttpContext.Current.Server.MapPath(path);
+                path = _ctx.Server.MapPath(path);
             }
             return path;
+        }
+
+        //Gets current user IP (even if it's forwarded by a proxy)
+        //This a local version of the one in WebHelper since it need the current context from the constructor (due to Async)
+        private string GetIPAddress()
+        {
+            HttpContext ctx = _ctx;
+            string ip = ctx.Request.ServerVariables["HTTP_X_FORWARDED_FOR"];
+
+            if (!string.IsNullOrEmpty(ip))
+            {
+                string[] addresses = ip.Split(',');
+                if (addresses.Length != 0)
+                {
+                    return addresses[0];
+                }
+            }
+
+            return ctx.Request.ServerVariables["REMOTE_ADDR"];
         }
 
         //Substitutes {{fieldname}} placeholders in the template
         private string ReplacePlaceholders(string contents)
         {
-            HttpRequest req = HttpContext.Current.Request;
+            HttpRequest req = _ctx.Request;
 
             string[] fields = TemplatingHelper.GetAllPlaceHolderNames(contents);
             foreach(string fldName in fields)
@@ -203,6 +224,66 @@ namespace IISMailer
             }
 
             return contents;
+        }
+
+        //Escape field value for JSON
+        //From: https://stackoverflow.com/a/17691629/4141866
+        private string CleanForJSON(string s)
+        {
+            if (s == null || s.Length == 0)
+            {
+                return "";
+            }
+
+            char c = '\0';
+            int i;
+            int len = s.Length;
+            StringBuilder sb = new StringBuilder(len + 4);
+            String t;
+
+            for (i = 0; i < len; i += 1)
+            {
+                c = s[i];
+                switch (c)
+                {
+                    case '\\':
+                    case '"':
+                        sb.Append('\\');
+                        sb.Append(c);
+                        break;
+                    case '/':
+                        sb.Append('\\');
+                        sb.Append(c);
+                        break;
+                    case '\b':
+                        sb.Append("\\b");
+                        break;
+                    case '\t':
+                        sb.Append("\\t");
+                        break;
+                    case '\n':
+                        sb.Append("\\n");
+                        break;
+                    case '\f':
+                        sb.Append("\\f");
+                        break;
+                    case '\r':
+                        sb.Append("\\r");
+                        break;
+                    default:
+                        if (c < ' ')
+                        {
+                            t = "000" + String.Format("X", c);
+                            sb.Append("\\u" + t.Substring(t.Length - 4));
+                        }
+                        else
+                        {
+                            sb.Append(c);
+                        }
+                        break;
+                }
+            }
+            return sb.ToString();
         }
 
         //Post current data to URL using the indicated format
@@ -260,9 +341,9 @@ namespace IISMailer
         /// <param name="fldTemplate">The string used to serialize the data with String.Format</param>
         /// <param name="Separator">The separator for each row</param>
         /// <param name="urlEncode">If values should be encoded as URLs</param>
-        /// <param name="EscapeQuotes">If double quotes in fields' data should be escaped adding an extra doble quote (for example for JSON)</param>
+        /// <param name="EscapeFields">Fix special chars for JSON</param>
         /// <returns></returns>
-        private string Format(NameValueCollection data, string fldTemplate, string Separator = "", bool urlEncode = false, bool EscapeQuotes = false)
+        private string Format(NameValueCollection data, string fldTemplate, string Separator = "", bool urlEncode = false, bool EscapeFields = false)
         {
             StringBuilder res = new StringBuilder();
             for(int i = 0; i<data.Count; i++)
@@ -271,10 +352,10 @@ namespace IISMailer
                 if (IsValidDataField(fld))
                 {
                     string fldVal = data[fld];
-                    if (EscapeQuotes)
+                    if (EscapeFields)
                     {
-                        fld = fld.Replace("\"", "\"\"");
-                        fldVal = fldVal.Replace("\"", "\"\"");
+                        fld = CleanForJSON(fld);
+                        fldVal = CleanForJSON(fldVal);
                     }
                     if (urlEncode)
                     {
@@ -307,7 +388,7 @@ namespace IISMailer
         private string ToJsonStr(NameValueCollection data)
         {
             var res = "{\n";
-            res += Format(data, "\"{0}\":\"{1}\"", ",\n", EscapeQuotes:true);
+            res += Format(data, "\"{0}\":\"{1}\"", ",\n", EscapeFields:true);
             return res + "\n}";
         }
         #endregion
