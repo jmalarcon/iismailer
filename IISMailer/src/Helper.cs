@@ -198,14 +198,30 @@ namespace IISMailer
             return res;
         }
 
-        //Formats the data using the specified text template
-        private string Format(NameValueCollection data, string fldTemplate)
+        /// <summary>
+        /// Formats the data using the specified text template
+        /// </summary>
+        /// <param name="data">The name/value collection to serialize</param>
+        /// <param name="fldTemplate">The string used to serialize the data with String.Format</param>
+        /// <param name="Separator">The separator for each row</param>
+        /// <param name="urlEncode"></param>
+        /// <returns></returns>
+        private string Format(NameValueCollection data, string fldTemplate, string Separator = "", bool urlEncode = false)
         {
             StringBuilder res = new StringBuilder();
-            foreach (string fld in data)
+            for(int i = 0; i<data.Count; i++)
             {
+                string fld = data.Keys[i];  //Current field name
                 if (IsValidDataField(fld))
-                    res.AppendFormat(fldTemplate, fld, data[fld]);
+                {
+                    if(urlEncode)
+                        res.AppendFormat(fldTemplate, HttpUtility.UrlEncode(fld), HttpUtility.UrlEncode(data[fld]));
+                    else
+                        res.AppendFormat(fldTemplate, fld, data[fld]);
+
+                    if (!String.IsNullOrEmpty(Separator) && i<data.Count-1) //Append only if it's not the latest value (and is not an empty separator)
+                        res.Append(Separator);
+                }
             }
             return res.ToString();
         }
@@ -213,7 +229,7 @@ namespace IISMailer
         //Formats the results to be sent by email
         private string ToEmail(NameValueCollection data)
         {
-            return Format(data, "- {0}: {1}\n");
+            return Format(data, "- {0}: {1}", "\n");
         }
         #endregion
     }
