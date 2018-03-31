@@ -1,5 +1,0 @@
-fromAddress: web@company.com
-fromName: Web Site
-toAddress: sales@company.com
-subject: New form submission from the web!
-dest.url: /thanks-for-your-mail.html

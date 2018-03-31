@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Web;
-using System.Web.Configuration;
 using System.Collections.Specialized;
 using System.Text;
 using Mono.Csv;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
 using IISHelpers;
 using IISHelpers.YAML;
 
@@ -19,12 +17,19 @@ namespace IISMailer
 
         public const string WEB_CONFIG_PARAM_PREFIX = "IISMailer:"; //THe prefix to use to search for parameters in web.config
 
-        private SimpleYAMLParser mailerProps;
+        private SimpleYAMLParser _mailerProps;
+        private NameValueCollection _data;
 
         //Constructor
-        public Helper(string props)
+        public Helper(string mailerDefPath)
         {
-            mailerProps = new SimpleYAMLParser(props);
+            string props = IOHelper.ReadTextFromFile(mailerDefPath);
+            //Get the Front Matter of the form action definition file
+            _mailerProps = new SimpleYAMLParser(props);
+            //Clone current request Form data
+            CloneRequestData();
+            //Add extra info to the managed data
+            AddExtraInfoToRequestData();
         }
 
         /// <summary>
@@ -38,7 +43,7 @@ namespace IISMailer
         public string GetParamValue(string name, string defValue = "")
         {
             //Retrieve from the front matter...
-            string val = mailerProps[name];
+            string val = _mailerProps[name];
             if (!string.IsNullOrEmpty(val))
                 return val;
 
@@ -50,39 +55,7 @@ namespace IISMailer
         //(excluding special params suchs a honeypot or finalURL)
         internal string GetFormDataForEmailFromRequest()
         {
-            HttpRequest req = HttpContext.Current.Request;
-            StringBuilder formData = new StringBuilder();
-            foreach (string fld in req.Form)
-            {
-                if (IsDataField(fld))
-                    formData.AppendFormat("- {0}: {1}\n", fld, req.Form[fld]);
-            }
-            //Add current user IP, user-agent and referrer
-            formData.AppendFormat("\n- IP: {0}\n", WebHelper.GetIPAddress());
-            formData.AppendFormat("- User-Agent: {0}\n", req.UserAgent);
-            formData.AppendFormat("- Referrer: {0}\n", req.UrlReferrer.ToString());
-
-            return formData.ToString();
-        }
-
-        //Gets a string to be sent to a CSV file
-        internal List<string> GetFormDataForCSVFromRequest()
-        {
-            HttpRequest req = HttpContext.Current.Request;
-            List<string> formData = new List<string>();
-            foreach (string fld in req.Form)
-            {
-                if (IsDataField(fld))
-                {
-                    formData.Add(req.Form[fld]);
-                }
-            }
-            //Add current user IP, user-agent and referrer
-            formData.Add(WebHelper.GetIPAddress());
-            formData.Add(req.UserAgent);
-            formData.Add(req.UrlReferrer.ToString());
-
-            return formData;
+            return ToEmail(_data);
         }
 
         //Gets the URL for the page to be shown after sending the email
@@ -110,7 +83,7 @@ namespace IISMailer
             {
                 using (CsvFileWriter csvFW = new CsvFileWriter(swCSV))
                 {
-                    csvFW.WriteRow(GetFormDataForCSVFromRequest());
+                    csvFW.WriteRow(GetDataAsList(_data));
                 }
             }
             
@@ -158,11 +131,26 @@ namespace IISMailer
 
         #region Internal auxiliary methods
 
+        //Clone the current request from data to an internal collection to be able to manipulate it
+        private void CloneRequestData()
+        {
+            _data = new NameValueCollection(HttpContext.Current.Request.Form);
+        }
+
         //Check if the received field is a data field or not. Valid fields are those which are not used as
         //instructions from the form, such as the Honeypot field or the Final URL field.
-        private static bool IsDataField(string fld)
+        public static bool IsValidDataField(string fld)
         {
             return fld.ToLower() != HONEYPOT_FIELD_NAME && fld.ToLower() != FINAL_URL_FIELD_NAME;
+        }
+
+        //Adds extra info to the data received from the form, such as the user IP, the UserAgent or the Referrer
+        private void AddExtraInfoToRequestData()
+        {
+            HttpRequest req = HttpContext.Current.Request;
+            _data.Add("IP", WebHelper.GetIPAddress());
+            _data.Add("User-Agent", req.UserAgent);
+            _data.Add("Referrer", req.UrlReferrer.ToString());
         }
 
         //Returns the absolute path to a file if it's a relative one 
@@ -192,6 +180,41 @@ namespace IISMailer
             return contents;
         }
 
+        #endregion
+
+        #region Formatting
+
+        //Returns data as a list of strings to serialize (without names, just the field values)
+        private List<string> GetDataAsList(NameValueCollection data)
+        {
+            List<string> res = new List<string>(data.Count);
+            foreach (string fld in data)
+            {
+                if (IsValidDataField(fld))
+                {
+                    res.Add(data[fld]);
+                }
+            }
+            return res;
+        }
+
+        //Formats the data using the specified text template
+        private string Format(NameValueCollection data, string fldTemplate)
+        {
+            StringBuilder res = new StringBuilder();
+            foreach (string fld in data)
+            {
+                if (IsValidDataField(fld))
+                    res.AppendFormat(fldTemplate, fld, data[fld]);
+            }
+            return res.ToString();
+        }
+
+        //Formats the results to be sent by email
+        private string ToEmail(NameValueCollection data)
+        {
+            return Format(data, "- {0}: {1}\n");
+        }
         #endregion
     }
 }

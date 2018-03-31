@@ -1,0 +1,12 @@
+fromAddress: web@company.com
+fromName: Web Site
+toAddress: sales@company.com
+subject: New form submission from the web!
+dest.url: /thanks-for-your-mail.html
+
+# CSV.path: E:\formData.csv
+# CSV.enabled: true
+
+# response.enabled: true
+# response.subject: We've received your email. Thanks.
+# response.template: ResponseTemplate.html
