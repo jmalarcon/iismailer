@@ -204,9 +204,10 @@ namespace IISMailer
         /// <param name="data">The name/value collection to serialize</param>
         /// <param name="fldTemplate">The string used to serialize the data with String.Format</param>
         /// <param name="Separator">The separator for each row</param>
-        /// <param name="urlEncode"></param>
+        /// <param name="urlEncode">If values should be encoded as URLs</param>
+        /// <param name="EscapeQuotes">If double quotes in fields' data should be escaped adding an extra doble quote (for example for JSON)</param>
         /// <returns></returns>
-        private string Format(NameValueCollection data, string fldTemplate, string Separator = "", bool urlEncode = false)
+        private string Format(NameValueCollection data, string fldTemplate, string Separator = "", bool urlEncode = false, bool EscapeQuotes = false)
         {
             StringBuilder res = new StringBuilder();
             for(int i = 0; i<data.Count; i++)
@@ -214,12 +215,22 @@ namespace IISMailer
                 string fld = data.Keys[i];  //Current field name
                 if (IsValidDataField(fld))
                 {
-                    if(urlEncode)
-                        res.AppendFormat(fldTemplate, HttpUtility.UrlEncode(fld), HttpUtility.UrlEncode(data[fld]));
-                    else
-                        res.AppendFormat(fldTemplate, fld, data[fld]);
+                    string fldVal = data[fld];
+                    if (EscapeQuotes)
+                    {
+                        fld = fld.Replace("\"", "\"\"");
+                        fldVal = fldVal.Replace("\"", "\"\"");
+                    }
+                    if (urlEncode)
+                    {
+                        fld = HttpUtility.UrlEncode(fld);
+                        fldVal = HttpUtility.UrlEncode(fldVal);
+                    }
+                    //Append to the final string
+                    res.AppendFormat(fldTemplate, fld, fldVal);
 
-                    if (!String.IsNullOrEmpty(Separator) && i<data.Count-1) //Append only if it's not the latest value (and is not an empty separator)
+                    //Append only if it's not the latest value (and is not an empty separator)
+                    if (!String.IsNullOrEmpty(Separator) && i<data.Count-1)
                         res.Append(Separator);
                 }
             }
@@ -230,6 +241,19 @@ namespace IISMailer
         private string ToEmail(NameValueCollection data)
         {
             return Format(data, "- {0}: {1}", "\n");
+        }
+
+        //Converts the data in a Form Data String
+        private string ToFormDataStr(NameValueCollection data)
+        {
+            return Format(data, "{0}={1}", "&", true);
+        }
+
+        private string ToJsonStr(NameValueCollection data)
+        {
+            var res = "{\n";
+            res += Format(data, "\"{0}\":\"{1}\"", ",\n", EscapeQuotes:true);
+            return res + "\n}";
         }
         #endregion
     }
