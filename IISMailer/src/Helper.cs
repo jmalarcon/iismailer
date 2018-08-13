@@ -92,6 +92,7 @@ namespace IISMailer
             
         }
 
+#if PROFESSIONAL || DEBUG
         //This method gets the email from the form and checks if sending a template email is enabled to be sent to them, and sends it
         internal void SendResponseToFormSender()
         {
@@ -155,8 +156,9 @@ namespace IISMailer
                 PostJsonToURl(whURL);
             }
         }
+#endif
 
-        #region Internal auxiliary methods
+#region Internal auxiliary methods
 
         //Clone the current request from data to an internal collection to be able to manipulate it
         private void CloneRequestData()
@@ -316,9 +318,9 @@ namespace IISMailer
             PostToURL(url, ToJsonStr(_data), "application/json");
         }
 
-        #endregion
+#endregion
 
-        #region Formatting
+#region Formatting
 
         //Returns data as a list of strings to serialize (without names, just the field values)
         private List<string> GetDataAsList(NameValueCollection data)
@@ -391,6 +393,6 @@ namespace IISMailer
             res += Format(data, "\"{0}\":\"{1}\"", ",\n", EscapeFields:true);
             return res + "\n}";
         }
-        #endregion
+#endregion
     }
 }

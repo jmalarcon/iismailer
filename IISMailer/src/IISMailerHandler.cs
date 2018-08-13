@@ -31,7 +31,11 @@ namespace IISMailer
                     throw new SecurityException();  //Forbid direct call
                 }
                 string referrerDomain = req.UrlReferrer.Host;
+#if PROFESSIONAL || DEBUG
                 string[] allowedDomains = hlpr.GetParamValue("allowedDomains", req.Url.Host).Split(',');
+#else
+                string[] allowedDomains = (req.Url.Host).Split(',');
+#endif
                 //Must have a referrer to work
                 for (int i = 0; i < allowedDomains.Length; i++)
                 {
@@ -57,16 +61,17 @@ namespace IISMailer
                 Mailer mlr = new Mailer(hlpr);
                 mlr.SendMail(formData);
 
+#if PROFESSIONAL || DEBUG
                 //Call webhook if any
                 hlpr.CallWebHook();
-
+#endif
                 //Save to CSV File
                 hlpr.AppendToCSVFile();
 
-
+#if PROFESSIONAL || DEBUG
                 //Send response to the user that filled in the form
                 hlpr.SendResponseToFormSender();
-
+#endif
                 //Redirect to final URL
                 ctx.Response.Redirect(hlpr.GetDestinationURL());
 
@@ -89,9 +94,9 @@ namespace IISMailer
             }
         }
 
-        #endregion
+#endregion
 
-        #region IHttpAsyncHandler members
+#region IHttpAsyncHandler members
         private delegate void AsyncRequestDelegate(HttpContext context);
         private AsyncRequestDelegate procRequest;
 
@@ -105,6 +110,6 @@ namespace IISMailer
         {
             procRequest.EndInvoke(result);
         }
-        #endregion
+#endregion
     }
 }
