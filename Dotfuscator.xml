@@ -4,19 +4,12 @@
   <input>
     <loadpaths />
     <asmlist>
-      <inputassembly refid="0eb5fdd4-073d-4845-98e6-a085d7ad441a">
+      <inputassembly refid="336bbaef-5295-41e0-8405-0dbb6b853d50">
         <option>honoroas</option>
         <option>stripoa</option>
         <option>library</option>
         <option>transformxaml</option>
-        <file dir="P:\1 - Jose\Desarrollos\IISMailer\IISMailer\IISMailer\bin" name="IISMailerPRO.dll" />
-      </inputassembly>
-      <inputassembly refid="e09fc924-adec-4598-9430-4b9b23d5af4c">
-        <option>honoroas</option>
-        <option>stripoa</option>
-        <option>library</option>
-        <option>transformxaml</option>
-        <file dir="P:\1 - Jose\Desarrollos\IISMailer\IISMailer\IISMailer\bin" name="IISMailerSTD.dll" />
+        <file dir="P:\1 - Jose\Desarrollos\IISMailer\IISMailer\IISMailer\bin" name="IISMailer.dll" />
       </inputassembly>
     </asmlist>
   </input>

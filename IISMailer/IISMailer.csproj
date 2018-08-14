@@ -91,7 +91,6 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <AssemblyName>IISMailerSTD</AssemblyName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Professional|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
@@ -102,7 +101,6 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <AssemblyName>IISMailerPRO</AssemblyName>
   </PropertyGroup>
   <Import Project="..\..\..\MIIS-IISMarkdownHandler\GithubRepo\src\IISHelpers\IISHelpers.projitems" Label="Shared" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
