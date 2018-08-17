@@ -67,10 +67,14 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="ResponseTemplate.html" />
+    <Content Include="test\index.html" />
+    <Content Include="test\ok-green.png" />
+    <Content Include="test\received.html" />
     <Content Include="Web.config">
       <SubType>Designer</SubType>
     </Content>
     <Content Include="iis.mailer" />
+    <Content Include="test\test01.mailer" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>

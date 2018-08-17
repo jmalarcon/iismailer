@@ -1,0 +1,17 @@
+# READ THE FULL DOCUMENTATION AT: https://iismailer.com/docs/
+
+fromAddress: web@company.com
+fromName: Web Site
+toAddress: sales@company.com
+subject: New form submission from our web!
+
+server.host: 127.0.0.1
+#server.user: web@company.com
+#server.password: pa$$w0rd
+server.SSL: false
+server.port: 25
+
+dest.url: received.html
+
+#CSV.enabled: true
+#CSV.path: formData.csv
