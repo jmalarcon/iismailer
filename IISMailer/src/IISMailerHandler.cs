@@ -33,7 +33,11 @@ namespace IISMailer
                 string referrerDomain = req.UrlReferrer.Host;
 #if PROFESSIONAL || DEBUG
                 string[] allowedDomains = hlpr.GetParamValue("allowedDomains", req.Url.Host).Split(',');
-#else
+#endif
+#if DEMO
+                string[] allowedDomains = {"localhost"};
+#endif
+#if STANDARD
                 string[] allowedDomains = (req.Url.Host).Split(',');
 #endif
                 //Must have a referrer to work
@@ -61,14 +65,14 @@ namespace IISMailer
                 Mailer mlr = new Mailer(hlpr);
                 mlr.SendMail(formData);
 
-#if PROFESSIONAL || DEBUG
+#if PROFESSIONAL || DEMO || DEBUG
                 //Call webhook if any
                 hlpr.CallWebHook();
 #endif
                 //Save to CSV File
                 hlpr.AppendToCSVFile();
 
-#if PROFESSIONAL || DEBUG
+#if PROFESSIONAL || DEMO || DEBUG
                 //Send response to the user that filled in the form
                 hlpr.SendResponseToFormSender();
 #endif

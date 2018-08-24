@@ -7,10 +7,14 @@ using System.Runtime.InteropServices;
 // associated with an assembly.
 #if PROFESSIONAL || DEBUG
 [assembly: AssemblyTitle("IISMailer Professional")]
-#else
+#endif
+#if STANDARD
 [assembly: AssemblyTitle("IISMailer Standard")]
 #endif
-[assembly: AssemblyDescription("")]
+#if DEMO
+[assembly: AssemblyTitle("IISMailer Demo version")]
+[assembly: AssemblyDescription("This demo version will only work when served under localhost")]
+#endif
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("IISMailer")]

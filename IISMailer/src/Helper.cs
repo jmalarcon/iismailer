@@ -92,7 +92,7 @@ namespace IISMailer
             
         }
 
-#if PROFESSIONAL || DEBUG
+#if PROFESSIONAL || DEMO || DEBUG
         //This method gets the email from the form and checks if sending a template email is enabled to be sent to them, and sends it
         internal void SendResponseToFormSender()
         {
