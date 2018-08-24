@@ -12,8 +12,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("IISMailer Standard")]
 #endif
 #if DEMO
-[assembly: AssemblyTitle("IISMailer Demo version")]
-[assembly: AssemblyDescription("This demo version will only work when served under localhost")]
+[assembly: AssemblyTitle("IISMailer Test and Development Edition")]
+[assembly: AssemblyDescription("This version will only work when served under localhost")]
 #endif
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
