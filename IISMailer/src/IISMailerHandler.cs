@@ -43,7 +43,7 @@ namespace IISMailer
                 //Must have a referrer to work
                 for (int i = 0; i < allowedDomains.Length; i++)
                 {
-                    if (referrerDomain == allowedDomains[i])
+                    if (referrerDomain == allowedDomains[i].Trim())
                     {
                         isAllowed = true;
                         break;
