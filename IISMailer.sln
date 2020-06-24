@@ -5,12 +5,12 @@ VisualStudioVersion = 15.0.27130.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IISMailer", "IISMailer\IISMailer.csproj", "{31322680-BB6C-4906-ACB0-2EA9D0FA7A88}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "IISHelpers", "..\..\MIIS-IISMarkdownHandler\GithubRepo\src\IISHelpers\IISHelpers.shproj", "{D79AAD4F-CACF-439D-B3F7-73088C6FC123}"
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "IISHelpers", "IISHelpers\IISHelpers.shproj", "{D79AAD4F-CACF-439D-B3F7-73088C6FC123}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		..\..\MIIS-IISMarkdownHandler\GithubRepo\src\IISHelpers\IISHelpers.projitems*{31322680-bb6c-4906-acb0-2ea9d0fa7a88}*SharedItemsImports = 4
-		..\..\MIIS-IISMarkdownHandler\GithubRepo\src\IISHelpers\IISHelpers.projitems*{d79aad4f-cacf-439d-b3f7-73088c6fc123}*SharedItemsImports = 13
+		IISHelpers\IISHelpers.projitems*{31322680-bb6c-4906-acb0-2ea9d0fa7a88}*SharedItemsImports = 4
+		IISHelpers\IISHelpers.projitems*{d79aad4f-cacf-439d-b3f7-73088c6fc123}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
