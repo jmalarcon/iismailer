@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Mail;
 using System.Net.Mime;
+using System.Runtime.InteropServices;
 using IISHelpers;
 
 namespace IISMailer
@@ -79,6 +80,10 @@ namespace IISMailer
             client.Port = serverPort;
             client.Host = serverHost;
             client.EnableSsl = serverSSL;
+
+            //Set the security protocol to Tls1.3 or 1.2, as they're the most secure and widely supported (TLS 1.1 and below are deprecated)
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls13 | SecurityProtocolType.Tls12;
+
 
             //Try to send the email
             client.Send(msg);
