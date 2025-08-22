@@ -78,6 +78,7 @@
     </Content>
     <Content Include="iis.mailer" />
     <Content Include="test\test01.mailer" />
+    <Content Include="README.md" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
